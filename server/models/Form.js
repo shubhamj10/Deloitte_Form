@@ -1,27 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const formSchema = new mongoose.Schema({
-  name: { 
-    type: String, 
-    required: true, 
-    trim: true 
-  },
-  questions: [
-    {
-      text: { 
-        type: String, 
-        required: true, 
-        trim: true 
-      },
-      ratingOptions: [
-        { 
-          type: mongoose.Schema.Types.Mixed 
-        }
-      ],
-    },
-  ],
-}, {
-  timestamps: true 
+const questionSchema = new mongoose.Schema({
+  text: { type: String, required: true },  
+  options: { type: [String], required: true },  
+  weightage: { type: Number, required: true, min: 0 }  
 });
 
-module.exports = mongoose.model('Form', formSchema);
+const formSchema = new mongoose.Schema({
+  title: { type: String, required: true }, 
+  questions: { type: [questionSchema], required: true }  
+});
+
+const Form = mongoose.model("Form", formSchema);
+module.exports = Form;

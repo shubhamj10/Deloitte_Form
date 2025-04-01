@@ -1,79 +1,93 @@
-const express = require('express');
-const Form = require('../models/Form');
-const Survey = require('../models/Survey');
-const { authenticateToken } = require('../utils/auth');
-const User = require('../models/User');
+const express = require("express");
+const Form = require("../models/Form");
+const Response = require("../models/Response");
+const { authenticateToken } = require("../utils/auth");
+const User = require("../models/User");
+
 const router = express.Router();
 
-router.get('/all', async (req, res) => {
+// Fetch all forms
+router.get("/all", async (req, res) => {
   try {
-    const surveys = await Survey.find({ submittedByUser: true }).populate('user').exec();
-    res.json(surveys); 
+    const forms = await Form.find();
+    res.json(forms);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to fetch submissions.' });
+    res.status(500).json({ message: "Failed to fetch forms." });
   }
 });
 
-
-router.get('/submission/:id', async (req, res) => {
+router.get("/categories", async (req, res) => {
   try {
-    const form = await Survey.findById(req.params.id).populate('user').exec();
-    if (!form) {
-      return res.status(404).json({ message: 'Submission not found.' });
-    }
-    res.json(form);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to fetch submission details.' });
+    const forms = await Form.find({}, "title");
+    res.json(forms.map(form => form.title)); // Send only category titles
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch categories." });
   }
 });
 
+// Fetch questions for a selected category
+router.post("/submit", authenticateToken, async (req, res) => {
+  console.log("Incoming submission:", req.body); // ✅ Debugging
 
+  const { formId, responses } = req.body; 
+  const userId = req.user.id;
 
-
-router.post('/submit', authenticateToken, async (req, res) => {
-  const { categoryName, ratings } = req.body;
-  const { id } = req.user;
-
-  console.log("Request body received:", req.body);
-  console.log("User from token:", req.user);
-
-  if (!categoryName || !ratings || ratings.length === 0) {
-    return res.status(400).json({ message: 'Invalid data provided.' });
-  }
-
-  if (ratings.some(r => !r.question || r.ratings === undefined)) {
-    return res.status(400).json({ message: 'Invalid ratings format.' });
+  if (!formId || !responses?.length) {
+    console.error("Invalid submission data:", req.body);
+    return res.status(400).json({ message: "Invalid submission data." });
   }
 
   try {
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found." });
 
-    const newSurvey = new Survey({
+    const form = await Form.findById(formId);
+    if (!form) return res.status(404).json({ message: "Form not found." });
+
+    // Extract category name from the form
+    const categoryName = form.title;
+
+    // Map responses correctly
+    const ratings = responses.map(({ questionId, answer }) => {
+      const question = form.questions.find(q => q._id.toString() === questionId);
+      return {
+        question: question ? question.text : "Unknown Question",
+        ratings: Number(answer) || 0,
+      };
+    });
+
+    // Create and save the response
+    const newResponse = new Response({
       categoryName,
       ratings,
-      user: user._id,
+      user: userId,
     });
 
-    console.log("New survey object:", newSurvey);
+    await newResponse.save();
 
-    const savedSurvey = await newSurvey.save();
-
-    res.status(200).json({
-      message: 'Survey ratings saved successfully!',
-      data: savedSurvey,
-    });
+    res.status(200).json({ message: "Survey submitted successfully!" });
   } catch (error) {
-    console.error('Detailed error:', error.stack || error);
-    res.status(500).json({ message: 'Failed to save survey responses.' });
+    console.error("Failed to submit survey:", error);
+    res.status(500).json({ message: "Failed to submit survey." });
   }
 });
 
 
-router.get('/', (req, res) => res.send('API is running...'));
+// Fetch questions for a selected category (Keep this below /submit)
+router.get("/:category", async (req, res) => {
+  try {
+    const form = await Form.findOne({ title: req.params.category });
+    if (!form) return res.status(404).json({ message: "Form not found for this category." });
+
+    if (!form.questions || form.questions.length === 0) {
+      return res.status(404).json({ message: "No questions found for this category." });
+    }
+
+    res.json({ formId: form._id, questions: form.questions });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch questions." });
+  }
+});
+
 
 module.exports = router;

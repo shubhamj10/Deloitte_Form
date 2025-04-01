@@ -1,15 +1,13 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+
 
 export default defineConfig({
-  plugins: [
-    react(),       // For React support
-    tailwindcss(), // TailwindCSS integration
-  ],
-  server: {
-    hmr: {
-      overlay: false, // Disable the error overlay if desired
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),  // Correct alias for "src"
     },
   },
 });

@@ -1,45 +1,32 @@
-import React from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { useCategories } from "./CategoriesContext"; // Import the custom hook
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import Form from "./pages/Form";
-import Dropdown from "./components/Dropdown";
-import QuestionCard from "./components/QuestionCard";
-import { data } from "./const";
 import AdminReport from "./pages/AdminReport";
 
-const appRouter = createBrowserRouter([
-  {
-    path: "/",
-    element: <h1 className="text-center text-3xl font-bold">Welcome to the App!</h1>,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/register",
-    element: <RegisterPage />,
-  },
-  {
-    path: "/admin",
-    element: <AdminDashboard />,
-  },
-  {
-    path: "/form",
-    element: <Form categoriesData={data} /> // Adjust props as required
-  },
-  {
-    path:"/adminreport",
-    element:<AdminReport/>
-  }
-]);
+// Ensure your App component is wrapped with CategoriesProvider
+const App = () => {
+  const { categories, fetchCategories } = useCategories(); // Access categories from context
 
-function App() {
+  useEffect(() => {
+    fetchCategories(); // Fetch categories when the app mounts
+  }, [fetchCategories]);
+
   return (
-    <RouterProvider router={appRouter} />
+    <Router>
+      <Routes>
+        <Route path="/" element={<h1 className="text-center text-3xl font-bold">Welcome to the App!</h1>} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/form" element={<Form categoriesData={categories} />} />
+        <Route path="/adminreport" element={<AdminReport />} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;

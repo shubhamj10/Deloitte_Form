@@ -1,21 +1,19 @@
-// src/components/QuestionCard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 const QuestionCard = ({ question, handleAnswerChange }) => {
   const [selectedAnswer, setSelectedAnswer] = useState("");
 
-  // Update the parent component with the selected answer
-  useEffect(() => {
-    handleAnswerChange(question.text, selectedAnswer);
-  }, [selectedAnswer, question.text, handleAnswerChange]);
-
   const handleAnswerChangeLocal = (e) => {
-    setSelectedAnswer(e.target.value);
+    const newAnswer = e.target.value;
+    setSelectedAnswer(newAnswer);
+    handleAnswerChange(question._id, newAnswer); // Pass `_id` instead of `text`
   };
 
   return (
     <div className="p-4 border border-gray-300 rounded-md shadow-sm">
       <p className="text-lg font-semibold text-gray-700 mb-2">{question.text}</p>
+      <p className="text-sm text-gray-500">Weightage: {question.weightage}</p>
+
       <select
         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         value={selectedAnswer}
